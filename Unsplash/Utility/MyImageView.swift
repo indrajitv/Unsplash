@@ -16,14 +16,14 @@ class MyImageView: UIImageView {
     
  
     private var currentURL: NSString?
-    var currentDownloadingUrls = [String]()
+  
     var zoomImageView,originalImageView:MyImageView!
     var blackBackgroundView:UIView!
  
-    
+    var task:URLSessionDataTask?
     
     func loadAsyncFrom(url: String, placeholder: UIImage?) {
-       
+        
         let imageURL = url as NSString
         
         if let cashedImage = asyncImagesCashArray.object(forKey: imageURL) {
@@ -32,18 +32,27 @@ class MyImageView: UIImageView {
         }
         image = placeholder
         currentURL = imageURL
-       
-        guard let requestURL = URL(string: url) else { image = placeholder; return }
-        URLSession.shared.dataTask(with: requestURL) { (data, response, error) in
-            DispatchQueue.main.async { [weak self] in
-                if error == nil,let imageData = data,let currentImgurl = self?.currentURL,currentImgurl == imageURL, let imageToPresent = UIImage(data: imageData) {
-                    self?.image = imageToPresent
+        
+        guard let requestURL = URL(string: url) else {
+            image = placeholder
+            return
+        }
+        
+        self.task = URLSession.shared.dataTask(with: requestURL) { (data, response, error) in
+            DispatchQueue.main.async {
+                if error == nil,let imageData = data,let currentImgurl = self.currentURL,currentImgurl == imageURL, let imageToPresent = UIImage(data: imageData) {
+                    self.image = imageToPresent
                     asyncImagesCashArray.setObject(imageToPresent, forKey: imageURL)
+                    
                 }else{
-                    self?.image = placeholder
+                    self.image = placeholder
                 }
-            }
-            }.resume()
+                if self.tag == 100{
+                    LineProgress.hide()
+                }
+            }}
+        
+        self.task?.resume()
     }
     
     
@@ -64,6 +73,7 @@ class MyImageView: UIImageView {
             
             
             zoomImageView = MyImageView()
+            zoomImageView.tag = 100
             zoomImageView.backgroundColor = UIColor.black
             zoomImageView.frame = startingFrame
             zoomImageView.isUserInteractionEnabled = true
@@ -87,14 +97,18 @@ class MyImageView: UIImageView {
                 
                 self.blackBackgroundView.alpha = 1
                 
-            }, completion: nil)
+            }, completion: { (_) in
+                 LineProgress.show(onView: window)
+            })
+            
             
         }
     }
     
     @objc func zoomOut() {
         if let startingFrame = originalImageView!.superview?.convert(originalImageView!.frame, to: nil){
-            
+            self.task?.cancel()
+            LineProgress.hide()
             UIView.animate(withDuration: 0.4, animations: { () -> Void in
                 self.zoomImageView.frame = startingFrame
                 

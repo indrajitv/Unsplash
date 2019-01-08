@@ -69,6 +69,7 @@ class HomeViewController: UIViewController {
         self.navigationItem.rightBarButtonItem = rightBarButton
      
         self.apiRequestToListPhotos()
+      
     }
 
   
@@ -96,6 +97,12 @@ class HomeViewController: UIViewController {
             sender.image = #imageLiteral(resourceName: "list").withRenderingMode(.alwaysOriginal)
             self.photoCollectionView.collectionViewLayout = grideFlow
         }
+    }
+    
+    
+    override func willTransition(to newCollection: UITraitCollection, with coordinator: UIViewControllerTransitionCoordinator) {
+        self.grideFlow.invalidateLayout()
+        self.listFlow.invalidateLayout()
     }
    
 }
@@ -166,14 +173,13 @@ class HomeViewPhotoCell:BaseCellForCollectionView{
                     self.photoImageView.backgroundColor = UIColor.lightGray.withAlphaComponent(0.5)
                 }
                 
-                if let value = photoDetails.urls?.regular{
+                if let value = photoDetails.urls?.small{
                     self.photoImageView.loadAsyncFrom(url: value, placeholder: nil)
                 }else{
                     self.photoImageView.image = nil
                 }
-           
             }else{
-                
+                self.photoImageView.image = nil
             }
         }
     }
